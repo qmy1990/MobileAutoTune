@@ -1,0 +1,8 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.moon.mobileautotune.demo'
+    compileSdk 34
+    defaultConfig { applicationId 'com.moon.mobileautotune.demo'; minSdk 26; targetSdk 34; versionCode 4; versionName '0.3.0' }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+dependencies { implementation project(':sdk') }

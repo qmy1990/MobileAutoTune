@@ -1,0 +1,6 @@
+jdk:
+  - openjdk17
+before_install:
+  - bash scripts/jitpack_setup.sh
+install:
+  - cd android && ./gradlew :sdk:publishReleasePublicationToMavenLocal --no-daemon
