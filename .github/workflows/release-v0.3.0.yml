@@ -1,0 +1,89 @@
+name: Publish v0.3.0 from its source tag
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/release-v0.3.0.yml']
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: v0.3.0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install toolchain
+        run: bash scripts/jitpack_setup.sh
+      - name: Verify dependencies and core
+        run: |
+          python3 scripts/verify_vendor.py
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j2
+          ctest --test-dir build --output-on-failure
+      - name: Build Android and Maven publication
+        run: |
+          ./scripts/build_android.sh
+          cd android
+          ./gradlew :sdk:publishReleasePublicationToMavenLocal --no-daemon
+      - name: Package
+        run: python3 scripts/package_release.py --platform android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: dist/release/*
+          retention-days: 14
+  ios:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: v0.3.0
+      - name: Build unsigned demos and XCFramework
+        run: ./scripts/build_ios.sh
+      - name: Package
+        run: python3 scripts/package_release.py --platform ios
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-release
+          path: dist/release/*
+          retention-days: 14
+  publish:
+    needs: [android, ios]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: v0.3.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-release'
+          path: release
+          merge-multiple: true
+      - name: Combine artifact checksums
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib,os,subprocess
+          out=pathlib.Path('release')
+          entries={}
+          for p in sorted(out.iterdir()):
+              if p.is_file() and p.name not in ['SHA256SUMS','manifest.json']:
+                  entries[p.name]={'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+          (out/'SHA256SUMS').write_text(''.join(f"{v['sha256']}  {n}\n" for n,v in entries.items()))
+          (out/'manifest.json').write_text(json.dumps({'tag':'v0.3.0','commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'files':entries},indent=2)+'\n')
+          PY
+      - name: Publish assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAT_RELEASE_TAG: v0.3.0
+        run: |
+          if gh release view "$MAT_RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$MAT_RELEASE_TAG" release/* --clobber
+          else
+            gh release create "$MAT_RELEASE_TAG" release/* --verify-tag --title "MobileAutoTune $MAT_RELEASE_TAG" --notes-file docs/RELEASE_NOTES.md
+          fi

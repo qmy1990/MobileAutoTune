@@ -9,14 +9,13 @@ jobs:
   android:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Install toolchain
-        run: sdkmanager "platforms;android-34" "ndk;27.0.12077973" "cmake;3.22.1"
+        run: bash scripts/jitpack_setup.sh
       - name: Verify dependencies and core
         run: |
           python3 scripts/verify_vendor.py
@@ -38,7 +37,7 @@ jobs:
   ios:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build unsigned demos and XCFramework
         run: ./scripts/build_ios.sh
       - name: Package
@@ -55,7 +54,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
           pattern: '*-release'
