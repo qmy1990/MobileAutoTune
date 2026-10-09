@@ -1,0 +1,41 @@
+name: Verify JitPack v0.3.0
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/jitpack-v0.3.0.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Build and download Maven artifacts
+        shell: bash
+        run: |
+          url=https://jitpack.io/com/github/qmy1990/MobileAutoTune/v0.3.0
+          for attempt in $(seq 1 40); do
+            if curl -fSL --connect-timeout 15 --max-time 45 "$url/MobileAutoTune-v0.3.0.pom" -o sdk.pom; then
+              if grep -q '<packaging>aar</packaging>' sdk.pom; then
+                curl -fSL --connect-timeout 15 --max-time 180 "$url/MobileAutoTune-v0.3.0.aar" -o sdk.aar
+                python3 - <<'PY'
+          import zipfile,io,hashlib
+          with zipfile.ZipFile('sdk.aar') as z:
+              abis={n.split('/')[1] for n in z.namelist() if n.startswith('jni/') and n.endswith('.so')}
+              assert abis=={'armeabi-v7a','arm64-v8a','x86','x86_64'},abis
+              with zipfile.ZipFile(io.BytesIO(z.read('classes.jar'))) as classes:
+                  assert 'com/moon/mobileautotune/MobileAudio.class' in classes.namelist()
+              assert 'assets/LICENSE' in z.namelist()
+          print('JitPack AAR SHA256:',hashlib.sha256(open('sdk.aar','rb').read()).hexdigest())
+          PY
+                printf 'JitPack POM and AAR downloaded; new Java package and four ABIs verified.\n' >> "$GITHUB_STEP_SUMMARY"
+                echo '::notice title=JitPack ready::com.github.qmy1990:MobileAutoTune:v0.3.0 POM and AAR verified'
+                exit 0
+              fi
+            fi
+            curl -sS --connect-timeout 10 --max-time 15 https://jitpack.io/api/builds/com.github.qmy1990/MobileAutoTune/v0.3.0 || true
+            sleep 15
+          done
+          echo '::error title=JitPack verification failed::POM/AAR could not be downloaded within the verification window'
+          exit 1
