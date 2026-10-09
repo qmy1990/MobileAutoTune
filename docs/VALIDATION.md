@@ -44,3 +44,11 @@ adb shell am instrument -w com.moon.mobileautotune.demo/.SDKSmokeInstrumentation
 本地用户音频验证：将自己有权使用的48kHzPCM16 WAV放入忽略的`audios/`目录，再运行`python3 scripts/validate_audio.py`；脚本默认按降E大调处理。
 
 Android64位库按官方NDK r27链接要求加入16KB LOAD/RELRO对齐；参考 [Android官方说明](https://developer.android.com/guide/practices/page-sizes)。实机当前4KB页面，不等同于16KB设备运行验收。
+
+## 线上发布验证
+
+`v0.3.0`已发布： [Release（14个附件）](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.3.0)。原tag构建在工具链准备失败，改用运行器预装SDK后，从相同源码tag重新构建并发布；Android/iOS/发布步骤均通过：[发布构建](https://github.com/qmy1990/MobileAutoTune/actions/runs/37960864996)。
+
+JitPack线上POM、AAR可下载，四ABI与新Java包检查通过：[在线Maven检查](https://github.com/qmy1990/MobileAutoTune/actions/runs/37961106912)。独立宿主工程仅使用`com.github.qmy1990:MobileAutoTune:v0.3.0`依赖完成构建，安装到Android16真机后成功创建引擎、设置变声及120%修音参数并处理PCM，无JNI加载异常。验证用宿主随后移除；原Demo与既有应用保留。
+
+发布附件`manifest.json`标记源码commit为`ba1bad42367f234ad4bb1eccb33834d90e94f72a`。本地与CI制品因编译路径、ZIP元数据、Demo签名等因素不保证字节相同；下载者以Release内SHA256SUMS为准。
