@@ -59,7 +59,7 @@ dependencies {
 }
 ```
 
-也可将下载的 AAR 放入 `app/libs/`，使用 `implementation files('libs/mobileautotune-v0.3.0.aar')`，二选一。Java 包名为 **`com.moon.mobileautotune`**，Demo 应用 ID 为 `com.moon.mobileautotune.demo`。AAR 自带 JNI 库、C++ shared runtime 与混淆保留规则；宿主若已打包不同版本 `libc++_shared.so`，应统一 NDK/STL 版本，不盲目覆盖。
+也可将下载的 AAR 放入 `app/libs/`，使用 `implementation files('libs/mobileautotune-v0.3.0.aar')`，二选一。Java 包名为 **`com.moon.mobileautotune`**，Demo 应用 ID 为 `com.moon.mobileautotune.demo`。64位共享库按16KB页面对齐；宿主APK仍需使用支持16KB打包的AGP（8.5.1+）。AAR 自带 JNI 库、C++ shared runtime 与混淆保留规则；宿主若已打包不同版本 `libc++_shared.so`，应统一 NDK/STL 版本，不盲目覆盖。
 
 ### 使用
 

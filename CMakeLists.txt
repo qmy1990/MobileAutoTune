@@ -47,6 +47,11 @@ target_include_directories(mobileautotune PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRE
  third_party/signalsmith-stretch third_party/signalsmith-linear/include)
 target_link_libraries(mobileautotune PRIVATE mat_rnnoise mat_rnnoise_legacy)
 target_compile_options(mobileautotune PRIVATE -O3 -Wall -Wextra)
+# NDK r27 needs both flags for LOAD and RELRO alignment on16KB devices.
+# Propagate to host shared libraries when the core is linked statically.
+if(ANDROID AND (ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64"))
+ target_link_options(mobileautotune INTERFACE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
+endif()
 if(UNIX)
  target_link_libraries(mobileautotune PRIVATE m)
 endif()

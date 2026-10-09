@@ -42,3 +42,5 @@ adb shell am instrument -w com.moon.mobileautotune.demo/.SDKSmokeInstrumentation
 ```
 
 本地用户音频验证：将自己有权使用的48kHzPCM16 WAV放入忽略的`audios/`目录，再运行`python3 scripts/validate_audio.py`；脚本默认按降E大调处理。
+
+Android64位库按官方NDK r27链接要求加入16KB LOAD/RELRO对齐；参考 [Android官方说明](https://developer.android.com/guide/practices/page-sizes)。实机当前4KB页面，不等同于16KB设备运行验收。

@@ -59,7 +59,7 @@ dependencies {
 }
 ```
 
-Alternatively, put the downloaded AAR in `app/libs/` and use `implementation files('libs/mobileautotune-v0.3.0.aar')`. Choose one method. The Java package is **`com.moon.mobileautotune`**; the demo application ID is `com.moon.mobileautotune.demo`. The AAR includes JNI libraries, the shared C++ runtime, and consumer ProGuard rules. If your host bundles a different `libc++_shared.so`, align NDK/STL versions instead of blindly overriding it.
+Alternatively, put the downloaded AAR in `app/libs/` and use `implementation files('libs/mobileautotune-v0.3.0.aar')`. Choose one method. The Java package is **`com.moon.mobileautotune`**; the demo application ID is `com.moon.mobileautotune.demo`. 64-bit shared libraries use16KB alignment; the host APK still needs16KB-capable packaging (AGP8.5.1+). The AAR includes JNI libraries, the shared C++ runtime, and consumer ProGuard rules. If your host bundles a different `libc++_shared.so`, align NDK/STL versions instead of blindly overriding it.
 
 ### Usage
 

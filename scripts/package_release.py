@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Package freshly built SDKs and unsigned iOS demos; never bundle user audio."""
-import argparse, hashlib, json, pathlib, re, shutil, tempfile, zipfile
+import argparse, hashlib, json, pathlib, re, shutil, struct, tempfile, zipfile
 root = pathlib.Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--platform', choices=['android', 'ios', 'all'], default='all')
@@ -25,6 +25,33 @@ if args.platform in ['android', 'all']:
     with zipfile.ZipFile(aar) as z:
         actual = {n.split('/')[1] for n in z.namelist() if n.startswith('jni/') and n.endswith('.so')}
         assert actual == set(abis), actual
+        for name in z.namelist():
+            if name.endswith('.so') and name.split('/')[1] in ['arm64-v8a', 'x86_64']:
+                data = z.read(name)
+                assert data[:5] == b'\x7fELF\x02', name
+                offset = struct.unpack_from('<Q', data, 32)[0]
+                size, count = struct.unpack_from('<HH', data, 54)
+                writable, relro = [], []
+                for i in range(count):
+                    header = offset + i * size
+                    kind = struct.unpack_from('<I', data, header)[0]
+                    if kind == 1:
+                        assert struct.unpack_from('<Q', data, header + 48)[0] >= 16384, name
+                        if struct.unpack_from('<I', data, header + 4)[0] & 2:
+                            address = struct.unpack_from('<Q', data, header + 16)[0]
+                            memory = struct.unpack_from('<Q', data, header + 40)[0]
+                            writable.append((address, address + memory))
+                    if kind == 0x6474e552:  # PT_GNU_RELRO
+                        address = struct.unpack_from('<Q', data, header + 16)[0]
+                        memory = struct.unpack_from('<Q', data, header + 40)[0]
+                        relro.append((address, address + memory))
+                # lld may put subsequent writable data in a separate LOAD with a
+                # full-page gap. Rounded RELRO protection must not cover it.
+                for begin, end in relro:
+                    rounded_begin, rounded_end = begin // 16384 * 16384, (end + 16383) // 16384 * 16384
+                    for low, high in writable:
+                        assert not (max(low, end) < min(high, rounded_end)), name
+                        assert not (max(low, rounded_begin) < min(high, begin)), name
         assert 'assets/LICENSE' in z.namelist()
         shutil.copy2(aar, out / f'mobileautotune-v{version}.aar')
         for abi in abis:
@@ -33,7 +60,14 @@ if args.platform in ['android', 'all']:
                     if item.filename.startswith('jni/') and not item.filename.startswith(f'jni/{abi}/'):
                         continue
                     dest.writestr(item, z.read(item.filename))
-    shutil.copy2(root / 'dist/android/mobileaudio-demo.apk', out / f'MobileAutoTune-demo-v{version}.apk')
+    apk = root / 'dist/android/mobileaudio-demo.apk'
+    with zipfile.ZipFile(apk) as z, apk.open('rb') as raw:
+        for item in z.infolist():
+            if item.filename.startswith(('lib/arm64-v8a/', 'lib/x86_64/')) and item.filename.endswith('.so') and item.compress_type == zipfile.ZIP_STORED:
+                raw.seek(item.header_offset + 26)
+                name_size, extra_size = struct.unpack('<HH', raw.read(4))
+                assert (item.header_offset + 30 + name_size + extra_size) % 16384 == 0, item.filename
+    shutil.copy2(apk, out / f'MobileAutoTune-demo-v{version}.apk')
     with tempfile.TemporaryDirectory() as td:
         stage = pathlib.Path(td)
         shutil.copytree(root / 'include', stage / 'include')
@@ -59,6 +93,9 @@ endforeach()
 set_target_properties(mobileautotune PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include"
   INTERFACE_LINK_LIBRARIES "mat_rnnoise;mat_rnnoise_legacy;m")
+if(ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64")
+  set_property(TARGET mobileautotune APPEND PROPERTY INTERFACE_LINK_OPTIONS "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
+endif()
 ''')
         (stage / 'README.md').write_text('''# Android native C/C++ SDK
 Android API26+, armeabi-v7a/arm64-v8a/x86/x86_64. Includes the DSP core and both RNNoise implementations.
