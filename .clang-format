@@ -1,0 +1,5 @@
+BasedOnStyle: Google
+ColumnLimit: 80
+InsertBraces: true
+DerivePointerAlignment: false
+PointerAlignment: Left

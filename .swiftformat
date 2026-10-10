@@ -1,0 +1,5 @@
+--swiftversion 5.9
+--indent 4
+--maxwidth 100
+--semicolons never
+--commas always

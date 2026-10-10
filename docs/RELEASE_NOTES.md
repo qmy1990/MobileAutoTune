@@ -1,11 +1,12 @@
-MobileAutoTune 首次公开发布 / First public release.
+MobileAutoTune — Android8.0+ / iOS14.0+ 人声音频 SDK / Vocal audio SDK.
 
-- MIT 开源，免费商用；保留许可证和第三方署名。 / MIT-licensed; free commercial use with retained license and dependency notices.
-- Java 包名 `com.moon.mobileautotune`，Demo `com.moon.mobileautotune.demo`。
-- 自动修音、±12半音变声、混响、回声、可调降噪；先变声后按原所选调式修音，强度最高120%。
-- Android8.0+：四种ABI通用及独立AAR、C/C++原生包、可安装Debug Demo APK。
-- iOS14+：真机arm64、模拟器arm64/x86_64 XCFramework；模拟器Demo及未签名IPA（真机需自行签名）。
-- JitPack: `com.github.qmy1990:MobileAutoTune:v0.3.0`。
-- SDK与Demo源码、中英文README、SHA256SUMS及制品manifest。
+- MIT 开源，免费商用；发布时保留许可证和第三方声明。 / MIT license with free commercial use.
+- 自动修音强度 `0..1`，`1` 为最大机械修音；12主音、大调、自然小调、半音阶。
+- ±12半音变声；按变声后的音高选择目标调式音符，一次变调完成处理。
+- 可调混响、回声和降噪；实时双轨录音与高质量 WAV 后处理。
+- Android 四种 ABI：通用与独立 AAR、C/C++ 静态 SDK、Demo APK。
+- iOS：真机arm64、模拟器arm64/x86_64 XCFramework、模拟器 Demo、未签名 IPA。
+- JitPack：`com.github.qmy1990:MobileAutoTune:v0.4.0`。
+- 中英文 README、SDK 与 Demo 源码、第三方许可证、制品清单与 SHA256SUMS。
 
-Nominal live DSP latency is20ms(frame)/30ms(stream); acoustic round-trip ≤50ms is not yet verified. See README and validation documentation for format, threading and monitoring requirements.
+Nominal live DSP latency:20ms(frame API)/30ms(stream API). Acoustic round-trip≤50ms is not yet verified. iOS device demos require your own signing. See README for integration, format and threading requirements.

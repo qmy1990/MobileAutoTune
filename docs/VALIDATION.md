@@ -1,54 +1,25 @@
-# 验证记录 / Validation
+# 验证说明
 
-## v0.3.0 发布检查（2026-10-10）
+## 自动测试
 
-- 包名迁移为 `com.moon.mobileautotune`，JNI符号、Demo标识、混淆规则与Java路径同步更新。
-- 核心及WAV测试通过：两种模式移调、变声后按原调式修音、120%不越过目标、NaN/Inf与越界拒绝、并发调参、原地处理、零回调heap分配、延迟对齐、WAV尾帧与尾音、原文件保护。
-- `verify_vendor.py`核对1336个锁定依赖文件。
-- 用户提供的hook3（降E大调）在两种模式、修音100%/变声0时，与0.2.0发布前对照输出逐字节一致；用户录音和试听文件不公开。
-- v0.3.0新包名Demo已安装到Android16真机，Java/JNI桥接测试通过：实时/后处理、移调后调式映射、120%参数及WAV处理。
-- iOS发布XCFramework完成独立Swift import/静态链接检查。
-- Android构建四种ABI；iOS构建真机arm64和模拟器arm64/x86_64。各ABI编译通过不代表均已覆盖实机运行。
-- GitHub Actions执行独立源码构建、核心测试、Maven本地发布与制品打包；实际执行结果以仓库Actions记录为准。
+- C++核心：参数边界、零强度原音对齐、±12半音变声、变声后调式量化、最大修音目标、帧与流入口一致性、并发参数更新、处理阶段零堆分配。
+- WAV：PCM16/float32、单声道/双声道、RIFF边界、截断和无效输入、取消、输出原子替换、预滚动裁剪与尾音。
+- Android：Java/JNI创建、处理、遥测、参数拒绝和WAV导出；四ABI AAR及原生SDK；64位ELF与APK 16KB对齐。
+- iOS：arm64真机、arm64/x86_64模拟器、XCFramework模块与Demo构建。
+- 依赖：上游源码锁定清单、完整许可证和分发声明。
 
-## 已有真机测量（0.2.0，非v0.3.0长录验收）
+## Android 真机
 
-修音120%、移调+1半音、混响/回声/降噪均满强度，双WAV写盘：
+Snapdragon8 Gen2 / Android16，满强度修音、混响、回声、降噪和 +5半音变声，90秒双轨录音，硬件监听关闭：回调P99约3.2ms、最大3.86ms，10ms周期无处理超时；录音丢帧和磁盘错误为0。FIFO中位2.09ms，峰值8ms；输出欠载1次，输入缺帧回调2次，积压恢复307样本。该结果描述对应测试时段，不能替代长时间热态及耳机回环验收。
 
-| 设备 | 时长 | 回调P99上界 | 结果 |
-|---|---:|---:|---|
-| 骁龙8Gen2 / Android16 | 90秒 | 3.6ms / 10ms预算 | 输出XRun0；输入缺帧回调1次；写盘丢样本/错误0 |
-| iPhone8Plus / iOS16.7.10 | 90秒 | 0.5ms / 2.667ms预算 | 渲染/时间戳间断/写盘错误0；未接耳机，监听关闭 |
+## iOS 真机
 
-iPhone同参数处理13.125秒hook3，耗时2.250秒（含初始化和WAV读写，不附加尾音），RTF约0.171。原0.1.1十分钟数据单独记录，不能作为新版长录验收。详见 [Android](ANDROID_PERFORMANCE.md)、[iOS](IOS_PERFORMANCE.md)。历史日志路径供本地复查；含设备日志与用户声音的原始证据不随开源仓库发布。
+iPhone8 Plus / iOS16.7.10，四项满强度效果和 +5半音变声，90秒双轨录音，内置麦克风、监听关闭：回调P99为0.5ms、最大1.10ms，2.67ms周期无处理超时；时间戳缺帧、录音丢帧、渲染和写盘错误均为0。音频工作组可用。该路由测试不包含耳机监听与声学回环。
 
-## 测量边界
+## 音频与设备范围
 
-- 帧入口名义算法延迟20ms，流入口30ms，最大历史年龄30/40ms；设备延迟另计，整体声学往返≤50ms未验证。
-- 最低系统运行兼容性仍需Android8.0/iOS14实机验证；最低部署配置已覆盖构建。
-- 不将白噪声衰减、单音修音精度等同于唱歌MOS/PESQ或最佳音质。没有NPU/GPU后端。
-- 多机型、热态十分钟录音、耳机回环、权限拒绝、中断、路由变化以及不同长度后处理仍需分别验收。
+最大修音强度为 `1`，关闭修音为 `0`。变声与修音使用一次变调，参数变化不增加算法缓冲。桌面人声与纯音用于输出一致性和目标音高验证，Android真机用于JNI和持续录音性能验证。
 
-## 复现
+构建支持的最低版本为Android8.0和iOS14.0；所有最低系统、CPU架构和耳机路由仍需宿主项目在目标设备上验收。算法名义实时延迟20/30ms，整体声学往返≤50ms尚未完成测量。后处理性能取决于设备、素材和文件I/O，应对目标素材测量完整导出耗时。
 
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j4
-ctest --test-dir build --output-on-failure
-python3 scripts/verify_vendor.py
-# 已授权麦克风、Demo在前台的Android调试设备：
-adb shell am instrument -w com.moon.mobileautotune.demo/.SDKSmokeInstrumentation
-./scripts/profile_android.sh 90 false 0 true 1.2 1
-```
-
-本地用户音频验证：将自己有权使用的48kHzPCM16 WAV放入忽略的`audios/`目录，再运行`python3 scripts/validate_audio.py`；脚本默认按降E大调处理。
-
-Android64位库按官方NDK r27链接要求加入16KB LOAD/RELRO对齐；参考 [Android官方说明](https://developer.android.com/guide/practices/page-sizes)。实机当前4KB页面，不等同于16KB设备运行验收。
-
-## 线上发布验证
-
-`v0.3.0`已发布： [Release（14个附件）](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.3.0)。原tag构建在工具链准备失败，改用运行器预装SDK后，从相同源码tag重新构建并发布；Android/iOS/发布步骤均通过：[发布构建](https://github.com/qmy1990/MobileAutoTune/actions/runs/37960864996)。
-
-JitPack线上POM、AAR可下载，四ABI与新Java包检查通过：[在线Maven检查](https://github.com/qmy1990/MobileAutoTune/actions/runs/37961106912)。独立宿主工程仅使用`com.github.qmy1990:MobileAutoTune:v0.3.0`依赖完成构建，安装到Android16真机后成功创建引擎、设置变声及120%修音参数并处理PCM，无JNI加载异常。验证用宿主随后移除；原Demo与既有应用保留。
-
-发布附件`manifest.json`标记源码commit为`ba1bad42367f234ad4bb1eccb33834d90e94f72a`。本地与CI制品因编译路径、ZIP元数据、Demo签名等因素不保证字节相同；下载者以Release内SHA256SUMS为准。
+发布附件提供 `manifest.json` 和 `SHA256SUMS`，CI见 [GitHub Actions](https://github.com/qmy1990/MobileAutoTune/actions)。用户录音、设备日志和个人签名不包含在开源源码或安装包中。

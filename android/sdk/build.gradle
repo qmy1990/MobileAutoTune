@@ -1,7 +1,7 @@
 plugins { id 'com.android.library'; id 'maven-publish' }
 
 group = System.getenv('GROUP') ?: 'com.github.qmy1990'
-version = System.getenv('VERSION') ?: 'v0.3.0'
+version = System.getenv('VERSION') ?: 'v0.4.0'
 android {
     namespace 'com.moon.mobileautotune'
     compileSdk 34

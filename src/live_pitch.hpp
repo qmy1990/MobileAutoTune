@@ -1,32 +1,58 @@
-#pragma once
+#ifndef MOBILEAUTOTUNE_SRC_LIVE_PITCH_HPP_
+#define MOBILEAUTOTUNE_SRC_LIVE_PITCH_HPP_
+#include <algorithm>
 #include <array>
 #include <cmath>
-#include <algorithm>
+
+namespace mobileautotune {
 // Pitch-synchronous dual read heads, periodic Hann crossfade. At a stable F0,
 // each reset spans two pitch periods so harmonics meet at the same phase.
 // Bounded 20ms history; low voices (<100Hz) use the maximum window.
 class LivePitchShifter {
-    std::array<float,2048> ring{};
-    int pos=0;
-    float phase=0, span=960;
-    float read(float delay) const {
-        float p=pos-delay;while(p<0)p+=2048;
-        int a=int(p);float f=p-a;
-        return ring[a]*(1-f)+ring[(a+1)&2047]*f;
+ public:
+  static constexpr int kLatency = 480;
+  static constexpr int kMaximumDelay = 960;
+  void Reset() {
+    ring_.fill(0);
+    position_ = 0;
+    phase_ = 0;
+    span_ = 960;
+  }
+  void Process(const float* input, float* output, int count, float semitones,
+               float hz) {
+    float ratio = std::exp2(semitones / 12.f);
+    float wanted = hz > 0 ? std::clamp(96000.f / hz, 160.f, 960.f) : span_;
+    for (int i = 0; i < count; ++i) {
+      ring_[position_] = input[i];
+      span_ += 0.001f * (wanted - span_);
+      float second = phase_ + 0.5f;
+      if (second >= 1) {
+        second -= 1;
+      }
+      float w = 0.5f - 0.5f * std::cos(6.28318530718f * phase_);
+      output[i] = w * Read(kLatency + (phase_ - 0.5f) * span_) +
+                  (1 - w) * Read(kLatency + (second - 0.5f) * span_);
+      phase_ += (1 - ratio) / span_;
+      phase_ -= std::floor(phase_);
+      position_ = (position_ + 1) & 2047;
     }
-public:
-    static constexpr int latency=480;
-    static constexpr int maximumDelay=960;
-    void reset(){ring.fill(0);pos=0;phase=0;span=960;}
-    void process(const float *input,float *output,int count,float semitones,float hz){
-        float ratio=std::exp2(semitones/12.f);
-        float wanted=hz>0?std::clamp(96000.f/hz,160.f,960.f):span;
-        for(int i=0;i<count;++i){
-            ring[pos]=input[i];span+=0.001f*(wanted-span);
-            float second=phase+0.5f;if(second>=1)second-=1;
-            float w=0.5f-0.5f*std::cos(6.28318530718f*phase);
-            output[i]=w*read(latency+(phase-0.5f)*span)+(1-w)*read(latency+(second-0.5f)*span);
-            phase+=(1-ratio)/span;phase-=std::floor(phase);pos=(pos+1)&2047;
-        }
+  }
+
+ private:
+  std::array<float, 2048> ring_{};
+  int position_ = 0;
+  float phase_ = 0, span_ = 960;
+  float Read(float delay) const {
+    float p = position_ - delay;
+    while (p < 0) {
+      p += 2048;
     }
+    int a = int(p);
+    float f = p - a;
+    return ring_[a] * (1 - f) + ring_[(a + 1) & 2047] * f;
+  }
 };
+
+}  // namespace mobileautotune
+
+#endif  // MOBILEAUTOTUNE_SRC_LIVE_PITCH_HPP_

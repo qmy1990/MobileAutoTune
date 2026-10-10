@@ -12,7 +12,7 @@ Original SDK and demo code is licensed under [MIT](LICENSE): **free commercial u
 
 | Feature | Controls and behavior |
 |---|---|
-| Automatic pitch correction | 12 tonics; major, natural minor, chromatic; strength `0..1.2`, with faster mechanical retuning at120% |
+| Automatic pitch correction | 12 tonics; major, natural minor, chromatic; strength `0..1`, 1 gives maximum mechanical retuning |
 | Voice pitch shifting | `-12..+12` semitones; correction targets the selected scale **after** the voice pitch shift |
 | Reverb | Strength `0..1` |
 | Echo | Strength `0..1`, delay `40..800ms` |
@@ -22,16 +22,16 @@ Real-time mode uses short-history pitch shifting. Offline mode uses Signalsmith 
 
 ## Downloads and demos
 
-[Latest release and all assets](https://github.com/qmy1990/MobileAutoTune/releases/latest) · [v0.3.0](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.3.0)
+[Latest release and all assets](https://github.com/qmy1990/MobileAutoTune/releases/latest) · [v0.4.0](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.4.0)
 
 | Download | Contents |
 |---|---|
-| [Android demo APK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.3.0/MobileAutoTune-demo-v0.3.0.apk) | Installable Debug demo: recording, controls, import, playback, offline processing |
-| [Universal Android AAR](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.3.0/mobileautotune-v0.3.0.aar) | `armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`; per-ABI AARs are also available |
-| [Android C/C++ SDK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.3.0/MobileAutoTune-android-native-v0.3.0.zip) | Static core libraries for all four ABIs, headers, and CMake integration |
-| [iOS XCFramework](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.3.0/MobileAudioSDK-v0.3.0.xcframework.zip) | Device arm64; simulator arm64/x86_64 |
-| [Unsigned iOS demo IPA](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.3.0/MobileAutoTune-demo-v0.3.0-unsigned.ipa) | Requires your own development/distribution signing; cannot be installed directly on arbitrary iPhones |
-| [iOS simulator demo](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.3.0/MobileAutoTune-demo-v0.3.0-simulator.zip) | Unzip, then run `xcrun simctl install booted MobileAudioDemo.app` |
+| [Android demo APK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-demo-v0.4.0.apk) | Installable Debug demo: recording, controls, import, playback, offline processing |
+| [Universal Android AAR](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/mobileautotune-v0.4.0.aar) | `armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`; per-ABI AARs are also available |
+| [Android C/C++ SDK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-android-native-v0.4.0.zip) | Static core libraries for all four ABIs, headers, and CMake integration |
+| [iOS XCFramework](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAudioSDK-v0.4.0.xcframework.zip) | Device arm64; simulator arm64/x86_64 |
+| [Unsigned iOS demo IPA](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-demo-v0.4.0-unsigned.ipa) | Requires your own development/distribution signing; cannot be installed directly on arbitrary iPhones |
+| [iOS simulator demo](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-demo-v0.4.0-simulator.zip) | Unzip, then run `xcrun simctl install booted MobileAudioDemo.app` |
 
 Demo sources: [Android](android/demo) / [iOS](ios/Demo). Release assets include `SHA256SUMS` and `manifest.json`. iOS14+ device builds are arm64; armv7 is not included.
 
@@ -55,11 +55,11 @@ Add the dependency to your app module:
 
 ```groovy
 dependencies {
-    implementation 'com.github.qmy1990:MobileAutoTune:v0.3.0'
+    implementation 'com.github.qmy1990:MobileAutoTune:v0.4.0'
 }
 ```
 
-Alternatively, put the downloaded AAR in `app/libs/` and use `implementation files('libs/mobileautotune-v0.3.0.aar')`. Choose one method. The Java package is **`com.moon.mobileautotune`**; the demo application ID is `com.moon.mobileautotune.demo`. 64-bit shared libraries use16KB alignment; the host APK still needs16KB-capable packaging (AGP8.5.1+). The AAR includes JNI libraries, the shared C++ runtime, and consumer ProGuard rules. If your host bundles a different `libc++_shared.so`, align NDK/STL versions instead of blindly overriding it.
+Alternatively, put the downloaded AAR in `app/libs/` and use `implementation files('libs/mobileautotune-v0.4.0.aar')`. Choose one method. The Java package is **`com.moon.mobileautotune`**; the demo application ID is `com.moon.mobileautotune.demo`. 64-bit shared libraries use16KB alignment; the host APK still needs16KB-capable packaging (AGP8.5.1+). The AAR includes JNI libraries, the shared C++ runtime, and consumer ProGuard rules. If your host bundles a different `libc++_shared.so`, align NDK/STL versions instead of blindly overriding it.
 
 ### Usage
 
@@ -73,8 +73,10 @@ MobileAudio.Parameters p = new MobileAudio.Parameters();
 p.tonic = 0; // C=0, Eb=3, A=9
 p.scale = MobileAudio.MAJOR;
 p.pitchShiftSemitones = -5;
-p.tuning = 1.2f;
-p.reverb = 0.18f; p.echo = 0.08f; p.denoise = 0.35f;
+p.tuning = 1.0f;
+p.reverb = 0.18f;
+p.echo = 0.08f;
+p.denoise = 0.35f;
 sdk.setParameters(p);
 // Enable monitor only with headphones.
 sdk.startLive(rawPath, wetPath, false);
@@ -95,9 +97,10 @@ import MobileAudioSDK
 
 let sdk = MATAudioSDK(offline: false)!
 let p = MATAudioParameters()
-p.tonic = 9; p.scale = 1 // A natural minor
+p.tonic = 9
+p.scale = 1 // A natural minor
 p.pitchShiftSemitones = 5
-p.tuning = 1.2
+p.tuning = 1.0
 try sdk.setParameters(p)
 try sdk.startLive(raw: rawURL, processed: wetURL, monitor: false)
 sdk.stopLive()
@@ -115,7 +118,8 @@ Public APIs: [mobile_audio.h](include/mat/mobile_audio.h) / [offline.h](include/
 ```cpp
 auto *engine = mat_create(48000, MAT_REALTIME);
 auto p = mat_default_parameters();
-p.pitch_shift_semitones = -5; p.tuning = 1.2f;
+p.pitch_shift_semitones = -5;
+p.tuning = 1.0f;
 mat_set_parameters(engine, &p);
 mat_process_frame(engine, input480, output480);
 mat_destroy(engine);
@@ -129,7 +133,6 @@ mat_destroy(engine);
 - Nominal algorithm latency is **20ms** for480-sample frames and **30ms** for arbitrary-size streaming; maximum history ages are30/40ms. Hardware/system latency is additional. **Acoustic round-trip ≤50ms has not been verified**; callback time is not end-to-end latency.
 - One processing thread per instance; never run lifecycle operations concurrently with processing. One control thread may update parameters. Java `process()` copies through JNI; use the C API for strict real-time callbacks. Offline processing belongs on a worker. Do not mix live and manual processing on an instance.
 - Exports trim pipeline preroll; `appendTail=true` adds4seconds of effect tail. Input and output must be different files.
-- `v0.3.0` migrates Java imports from `com.mobileautotune` to `com.moon.mobileautotune`. Update imports and use matching Java/native SDK versions. The new demo ID creates a separate app; old recordings are not migrated automatically. Since0.2.0 the C parameter struct includes pitch shifting; older C hosts must update headers and recompile.
 
 ## Build from source
 

@@ -1,5 +1,5 @@
-#ifndef MAT_OFFLINE_H
-#define MAT_OFFLINE_H
+#ifndef MOBILEAUTOTUNE_INCLUDE_MAT_OFFLINE_H_
+#define MOBILEAUTOTUNE_INCLUDE_MAT_OFFLINE_H_
 #include "mobile_audio.h"
 #ifdef __cplusplus
 extern "C" {
@@ -10,13 +10,14 @@ extern "C" {
  * copied once; callbacks optional, return nonzero to cancel. Partial output is
  * removed on error. Distinct input/output paths required (including symlinks).
  */
-typedef int (*mat_progress_callback)(float progress, void *user);
-int mat_process_wav(const char *input_path,const char *output_path,
-    const mat_parameters *parameters, mat_mode mode, int append_tail,
-    mat_progress_callback progress, void *user);
+typedef int (*mat_progress_callback)(float progress, void* user);
+int mat_process_wav(const char* input_path, const char* output_path,
+                    const mat_parameters* parameters, mat_mode mode,
+                    int append_tail, mat_progress_callback progress,
+                    void* user);
 /* Errors: -1 invalid argument, -2 unsupported/truncated input, -3 I/O failure,
  * -4 allocation/init failure, -5 canceled. */
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif  // MOBILEAUTOTUNE_INCLUDE_MAT_OFFLINE_H_

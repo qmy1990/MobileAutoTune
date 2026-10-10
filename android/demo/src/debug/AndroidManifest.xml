@@ -1,1 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"><instrumentation android:name="com.moon.mobileautotune.demo.SDKSmokeInstrumentation" android:targetPackage="com.moon.mobileautotune.demo" android:functionalTest="true"/><instrumentation android:name="com.moon.mobileautotune.demo.LivePerformanceInstrumentation" android:targetPackage="com.moon.mobileautotune.demo" android:functionalTest="true"/></manifest>
+<?xml version="1.0" ?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation android:name="com.moon.mobileautotune.demo.SDKSmokeInstrumentation" android:targetPackage="com.moon.mobileautotune.demo" android:functionalTest="true"/>
+    <instrumentation android:name="com.moon.mobileautotune.demo.LivePerformanceInstrumentation" android:targetPackage="com.moon.mobileautotune.demo" android:functionalTest="true"/>
+</manifest>

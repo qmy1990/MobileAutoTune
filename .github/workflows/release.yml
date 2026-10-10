@@ -16,6 +16,11 @@ jobs:
           java-version: '17'
       - name: Install toolchain
         run: bash scripts/jitpack_setup.sh
+      - name: Verify source formatting
+        run: |
+          python3 -m pip install clang-format==18.1.8
+          curl -fSL https://repo.maven.apache.org/maven2/com/google/googlejavaformat/google-java-format/1.22.0/google-java-format-1.22.0-all-deps.jar -o /tmp/google-java-format.jar
+          python3 scripts/check_format.py --java-format /tmp/google-java-format.jar
       - name: Verify dependencies and core
         run: |
           python3 scripts/verify_vendor.py
@@ -38,6 +43,11 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v5
+      - name: Verify Swift formatting
+        run: |
+          curl -fSL https://github.com/nicklockwood/SwiftFormat/releases/download/0.54.6/swiftformat.zip -o /tmp/swiftformat.zip
+          unzip -o /tmp/swiftformat.zip -d /tmp/mat-swiftformat
+          /tmp/mat-swiftformat/swiftformat --lint ios/Demo
       - name: Build unsigned demos and XCFramework
         run: ./scripts/build_ios.sh
       - name: Package
