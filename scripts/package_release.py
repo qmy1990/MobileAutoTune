@@ -4,9 +4,10 @@ import argparse, hashlib, json, pathlib, re, shutil, struct, tempfile, zipfile
 root = pathlib.Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--platform', choices=['android', 'ios', 'all'], default='all')
+parser.add_argument('--output', type=pathlib.Path, default=root / 'dist/release')
 args = parser.parse_args()
 version = re.search(r'project\(MobileAutoTune VERSION ([0-9.]+)', (root / 'CMakeLists.txt').read_text()).group(1)
-out = root / 'dist/release'
+out = args.output.resolve()
 out.mkdir(parents=True, exist_ok=True)
 abis = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
 
@@ -16,9 +17,15 @@ def zip_tree(source, target):
             if p.is_file() and p.name != '.DS_Store':
                 z.write(p, p.relative_to(source))
 
-def notices(target):
+def notices(target, full=True):
     for name in ['LICENSE', 'THIRD_PARTY_NOTICES.md']:
         shutil.copy2(root / name, target / name)
+    if not full: return
+    for folder in ['onnxruntime', 'key_models']:
+        destination = target / 'third_party' / folder
+        destination.mkdir(parents=True, exist_ok=True)
+        for source in (root / 'third_party' / folder).glob('*'):
+            if source.is_file(): shutil.copy2(source, destination / source.name)
 
 if args.platform in ['android', 'all']:
     aar = root / 'dist/android/mobileaudio-sdk.aar'
@@ -79,17 +86,23 @@ if args.platform in ['android', 'all']:
             core = max(candidates, key=lambda p: p.stat().st_mtime).parent
             libdir = stage / 'lib' / abi
             libdir.mkdir(parents=True)
-            for name in ['libmobileautotune.a', 'libmat_rnnoise.a', 'libmat_rnnoise_legacy.a']:
+            for name in ['libmobileautotune.a', 'libmobileautotune_key.a', 'libmat_rnnoise.a', 'libmat_rnnoise_legacy.a']:
                 shutil.copy2(core / name, libdir / name)
+            shutil.copy2(root / '.tools/ort/android/jni' / abi / 'libonnxruntime.so', libdir / 'libonnxruntime.so')
         (stage / 'CMakeLists.txt').write_text('''cmake_minimum_required(VERSION 3.22)
 project(MobileAutoTunePrebuilt LANGUAGES C CXX)
 if(NOT ANDROID)
   message(FATAL_ERROR "Use an Android NDK toolchain")
 endif()
-foreach(name mobileautotune mat_rnnoise mat_rnnoise_legacy)
+foreach(name mobileautotune mobileautotune_key mat_rnnoise mat_rnnoise_legacy)
   add_library(${name} STATIC IMPORTED GLOBAL)
   set_target_properties(${name} PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/lib/${ANDROID_ABI}/lib${name}.a")
 endforeach()
+add_library(mat_onnxruntime SHARED IMPORTED GLOBAL)
+set_target_properties(mat_onnxruntime PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/lib/${ANDROID_ABI}/libonnxruntime.so")
+set_target_properties(mobileautotune_key PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include"
+  INTERFACE_LINK_LIBRARIES "mobileautotune;mat_onnxruntime;android;log")
 set_target_properties(mobileautotune PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include"
   INTERFACE_LINK_LIBRARIES "mat_rnnoise;mat_rnnoise_legacy;m")
@@ -98,9 +111,10 @@ if(ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "x86_64")
 endif()
 ''')
         (stage / 'README.md').write_text('''# Android native C/C++ SDK
-Android API26+, armeabi-v7a/arm64-v8a/x86/x86_64. Includes the DSP core and both RNNoise implementations.
+Android API26+, armeabi-v7a/arm64-v8a/x86/x86_64. Includes the DSP core, both RNNoise implementations, the key-analysis library and ONNX Runtime.
 Use the Android NDK CMake toolchain and add_subdirectory(this package), then target_link_libraries(your_target PRIVATE mobileautotune).
 Link C++ runtime consistently with your host. The core uses C++17 and exposes the C API in include/mat/.
+For offline key analysis, link mobileautotune_key and package libonnxruntime.so in your APK. Install the separate key-model pack, pass its directory to mat_key_create, and analyze on a worker thread.
 The native core does not capture audio: supply your own 48kHz mono float32 I/O, or use the Java AAR for Oboe live recording.
 Redistribute LICENSE and THIRD_PARTY_NOTICES.md with your application.
 ''')
@@ -130,8 +144,12 @@ if args.platform in ['ios', 'all']:
             name = f'MobileAutoTune-demo-v{version}-unsigned.ipa' if platform == 'device' else f'MobileAutoTune-demo-v{version}-simulator.zip'
             zip_tree(stage, out / name)
 
-notices(out)
-files = [p for p in out.iterdir() if p.is_file() and p.name not in ['SHA256SUMS', 'manifest.json']]
+with tempfile.TemporaryDirectory() as td:
+    stage = pathlib.Path(td)
+    shutil.copytree(root / 'models/key', stage / 'key')
+    zip_tree(stage, out / f'MobileAutoTune-key-models-v{version}.zip')
+notices(out, full=False)
+files = [p for p in out.iterdir() if p.is_file() and p.name not in ['SHA256SUMS', 'manifest.json'] and (not re.search(r'v[0-9]+\.[0-9]+\.[0-9]+', p.name) or f'v{version}' in p.name)]
 manifest = {'version': version, 'android_min_api': 26, 'ios_min_version': '14.0', 'files': {}}
 for p in sorted(files):
     manifest['files'][p.name] = {'bytes': p.stat().st_size, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}

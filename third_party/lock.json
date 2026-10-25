@@ -5,7 +5,12 @@
     "rnnoise": "70f1d256acd4b34a572f999a05c87bf00b67730d",
     "rnnoise-model-sha256": "0a8755f8e2d834eff6a54714ecc7d75f9932e845df35f8b59bc52a7cfe6e8b37",
     "rnnoise-legacy": "v0.1",
-    "oboe": "1.9.3"
+    "oboe": "1.9.3",
+    "onnxruntime-headers": "v1.20.0",
+    "onnxruntime-android": "v1.22.0",
+    "onnxruntime-apple": "v1.20.0",
+    "swift-f0": "d1ba77fe5331310b778ebe126b6cb3656d41d24f",
+    "rmvpe-model-repository": "e6d0c1a17da07c33557852f9dfa2bd44cc75737d"
   },
   "files": {
     "third_party/signalsmith-stretch/.gitignore": "67f2acc9725dc8191dabf9b4d39337094365dfd057381d736d17d6105f084b6b",
@@ -1343,6 +1348,17 @@
     "third_party/oboe/tests/testStreamStop.cpp": "b218c454755ef1db1d675558cf4a154a1fc2e47adb41ff1d2af1aacbcb9389b7",
     "third_party/oboe/tests/testStreamWaitState.cpp": "ecd0d1199f4f043e31d51f020813a37e96c13831be292c92540b16ccf9acb0b8",
     "third_party/oboe/tests/testUtilities.cpp": "8d4c52df1795c9abc27eed88cd6101a083d28fad0bca8aa67875ba60990734bf",
-    "third_party/oboe/tests/testXRunBehaviour.cpp": "cd378409c76ddade03e3317ae61f378e11e063b4f18cd5ec2eb7b38696850f5b"
+    "third_party/oboe/tests/testXRunBehaviour.cpp": "cd378409c76ddade03e3317ae61f378e11e063b4f18cd5ec2eb7b38696850f5b",
+    "third_party/onnxruntime/ThirdPartyNotices.txt": "e9e90971a8e75a9a8ac0c6412e29c1202d079998389915aa485f46c816c3b4cc",
+    "third_party/onnxruntime/LICENSE": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+    "third_party/onnxruntime/include/nnapi_provider_factory.h": "49f7e0952e57b7e2942f69d8df61a9d99836f05b49a89700e1f5a16278c945e2",
+    "third_party/onnxruntime/include/coreml_provider_factory.h": "933d57c402271e5e2e8c44fff4dfa5746b1b024b2c8575d5de7e65c4daa43fb0",
+    "third_party/onnxruntime/include/onnxruntime_float16.h": "6c4db3d1954b266c4febe413351af86cac922e3448538e7e452e51d646e56a4a",
+    "third_party/onnxruntime/include/onnxruntime_cxx_inline.h": "45cb911ad364e61c038e3f01d324b27b15871e0c7cc80435007e4d3f5a70c43a",
+    "third_party/onnxruntime/include/onnxruntime_cxx_api.h": "1f5b8bcde589106bdf5f0e35dea25f8794bec1288d8aa83d875801b321cdf127",
+    "third_party/onnxruntime/include/onnxruntime_c_api.h": "573a117ae6b83ead7f53da6cedaa0d7b7d9cdb45c0ba4726bac9081e67696a82",
+    "third_party/key_models/RMVPE-weights-LICENSE": "bec61ed1eb9a3748644ddbc50303aa6978e14eeaba46822e59a006c722b52585",
+    "third_party/key_models/SwiftF0-LICENSE": "5f4711c748cf616e894fbab28144ee74f1650dfe1bbd6801c44f11e054508c18",
+    "third_party/onnxruntime/ThirdPartyNotices-1.20.0.txt": "cf7342f7ba482ef715ae58f5f497a8d3564fa255164175aea324cd293c5701a0"
   }
 }

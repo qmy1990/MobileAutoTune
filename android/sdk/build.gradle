@@ -1,8 +1,30 @@
 plugins { id 'com.android.library'; id 'maven-publish' }
 
 group = System.getenv('GROUP') ?: 'com.github.qmy1990'
-version = System.getenv('VERSION') ?: 'v0.4.0'
+version = System.getenv('VERSION') ?: 'v0.5.0'
+def sdkSourceRoot = rootProject.projectDir.parentFile
+def prepareKeyAnalysis = tasks.register('prepareKeyAnalysis', Exec) {
+    workingDir sdkSourceRoot
+    commandLine 'python3', 'scripts/prepare_key_analysis.py', '--platform', 'android', '--runtime-only'
+}
+def prepareNotices = tasks.register('prepareNotices', Sync) {
+    from("$sdkSourceRoot/third_party/onnxruntime") {
+        include 'LICENSE', 'ThirdPartyNotices*.txt'
+        into 'third_party/onnxruntime'
+    }
+    from("$sdkSourceRoot/third_party/key_models") { into 'third_party/key_models' }
+    into layout.buildDirectory.dir('generated/notices')
+}
+tasks.configureEach { task ->
+    if (task.name.startsWith('configureCMake')) {
+        task.dependsOn prepareKeyAnalysis
+    }
+    if (task.name.startsWith('merge') && task.name.endsWith('Assets')) {
+        task.dependsOn prepareNotices
+    }
+}
 android {
+    sourceSets { main.assets.srcDir layout.buildDirectory.dir('generated/notices') }
     namespace 'com.moon.mobileautotune'
     compileSdk 34
     ndkVersion '27.0.12077973'

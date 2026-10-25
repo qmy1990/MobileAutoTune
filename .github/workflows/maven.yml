@@ -24,6 +24,10 @@ jobs:
               assert abis=={'armeabi-v7a','arm64-v8a','x86','x86_64'},abis
               with zipfile.ZipFile(io.BytesIO(z.read('classes.jar'))) as classes:
                   assert 'com/moon/mobileautotune/MobileAudio.class' in classes.namelist()
+                  assert 'com/moon/mobileautotune/KeyAnalyzer.class' in classes.namelist()
+                  assert 'com/moon/mobileautotune/KeyAnalysisResult.class' in classes.namelist()
+              for abi in abis:
+                  assert f'jni/{abi}/libonnxruntime.so' in z.namelist()
               assert 'assets/LICENSE' in z.namelist()
           print('JitPack AAR SHA256:',hashlib.sha256(open('sdk.aar','rb').read()).hexdigest())
           PY

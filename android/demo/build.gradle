@@ -1,8 +1,16 @@
 plugins { id 'com.android.application' }
+def prepareKeyModels = tasks.register('prepareKeyModels', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine 'python3', 'scripts/prepare_key_analysis.py', '--platform', 'models'
+}
+tasks.configureEach { task ->
+    if (task.name.startsWith('merge') && task.name.endsWith('Assets')) task.dependsOn prepareKeyModels
+}
 android {
+    sourceSets { main.assets.srcDir "${rootProject.projectDir.parentFile}/models" }
     namespace 'com.moon.mobileautotune.demo'
     compileSdk 34
-    defaultConfig { applicationId 'com.moon.mobileautotune.demo'; minSdk 26; targetSdk 34; versionCode 5; versionName '0.4.0' }
+    defaultConfig { applicationId 'com.moon.mobileautotune.demo'; minSdk 26; targetSdk 34; versionCode 6; versionName '0.5.0' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
 }
 dependencies { implementation project(':sdk') }

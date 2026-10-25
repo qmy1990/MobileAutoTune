@@ -2,6 +2,7 @@ package com.moon.mobileautotune.demo;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
@@ -18,6 +19,8 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import com.moon.mobileautotune.KeyAnalysisResult;
+import com.moon.mobileautotune.KeyAnalyzer;
 import com.moon.mobileautotune.MobileAudio;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -45,6 +48,12 @@ public class MainActivity extends Activity {
   CheckBox monitor;
   CheckBox compactProcessing;
   Spinner capturePreset;
+  Spinner tonicSelector;
+  Spinner scaleSelector;
+  CheckBox analyzeAfterRecording;
+  Button cancelAnalysis;
+  volatile KeyAnalyzer keyAnalyzer;
+  volatile boolean destroyed;
   final Handler ui = new Handler(Looper.getMainLooper());
   final ExecutorService worker = Executors.newSingleThreadExecutor();
   MediaPlayer player;
@@ -111,6 +120,7 @@ public class MainActivity extends Activity {
     hint.setText("48 kHz 单声道人声。默认降E大调。监听需有线/USB耳机；蓝牙不用于50ms验收。");
     root.addView(hint);
     Spinner tonic = new Spinner(this);
+    tonicSelector = tonic;
     tonic.setAdapter(
         new ArrayAdapter<>(
             this,
@@ -129,6 +139,7 @@ public class MainActivity extends Activity {
           }
         });
     Spinner scale = new Spinner(this);
+    scaleSelector = scale;
     scale.setAdapter(
         new ArrayAdapter<>(
             this,
@@ -164,6 +175,10 @@ public class MainActivity extends Activity {
     monitor = new CheckBox(this);
     monitor.setText("开启实时耳机监听");
     root.addView(monitor);
+    analyzeAfterRecording = new CheckBox(this);
+    analyzeAfterRecording.setText("录音结束后分析原始人声调式");
+    analyzeAfterRecording.setChecked(true);
+    root.addView(analyzeAfterRecording);
     start =
         button(
             root,
@@ -192,6 +207,30 @@ public class MainActivity extends Activity {
               startActivityForResult(i, 2);
             });
     process = button(root, "高质量后处理", () -> runOffline());
+    button(root, "分析当前原音调式", () -> analyzeKey(null));
+    button(
+        root,
+        "导入音频并分析调式",
+        () -> {
+          if (live || busy) {
+            return;
+          }
+          Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+          intent.setType("audio/*");
+          intent.addCategory(Intent.CATEGORY_OPENABLE);
+          startActivityForResult(intent, 3);
+        });
+    cancelAnalysis =
+        button(
+            root,
+            "取消调式分析",
+            () -> {
+              KeyAnalyzer analyzer = keyAnalyzer;
+              if (analyzer != null) {
+                analyzer.cancel();
+              }
+            });
+    cancelAnalysis.setEnabled(false);
     button(root, "试听原音", () -> play(raw));
     button(root, "试听实时效果录音", () -> play(wet));
     button(root, "试听后处理效果", () -> play(offline));
@@ -322,6 +361,10 @@ public class MainActivity extends Activity {
   }
 
   void stopRecording() {
+    stopRecording(true);
+  }
+
+  void stopRecording(boolean analyze) {
     audio.stopLive();
     live = false;
     getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -331,6 +374,120 @@ public class MainActivity extends Activity {
     capturePreset.setEnabled(true);
     compactProcessing.setEnabled(true);
     status.setText("已保存原音及实时效果。可进行后处理：" + raw);
+    if (analyze && !destroyed && analyzeAfterRecording.isChecked()) {
+      analyzeKey(null);
+    }
+  }
+
+  void analyzeKey(Uri imported) {
+    if (busy || live || (raw == null && imported == null)) {
+      status.setText("请先完成录音，或导入音频进行调式分析。");
+      return;
+    }
+    stopPlayer();
+    File source = raw;
+    busy = true;
+    getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    process.setEnabled(false);
+    start.setEnabled(false);
+    status.setText("准备人声调式分析…");
+    worker.execute(
+        () -> {
+          try {
+            if (keyAnalyzer == null) {
+              keyAnalyzer =
+                  new KeyAnalyzer(KeyAnalyzer.bundledModels(this), new KeyAnalyzer.Options());
+            }
+            if (destroyed) {
+              return;
+            }
+            ui.post(() -> cancelAnalysis.setEnabled(true));
+            int[] last = {-1};
+            KeyAnalyzer.ProgressListener progress =
+                value -> {
+                  int percent = Math.round(value * 100);
+                  if (percent != last[0]) {
+                    last[0] = percent;
+                    ui.post(
+                        () -> {
+                          if (!destroyed) {
+                            status.setText("正在分析原始人声调式 " + percent + "%");
+                          }
+                        });
+                  }
+                };
+            KeyAnalysisResult result =
+                imported == null
+                    ? keyAnalyzer.analyze(source, progress)
+                    : keyAnalyzer.analyze(this, imported, progress);
+            ui.post(
+                () -> {
+                  if (!destroyed) {
+                    showKeyResult(result);
+                  }
+                });
+          } catch (Exception error) {
+            ui.post(
+                () -> {
+                  if (!destroyed) {
+                    status.setText("调式分析：" + error.getMessage());
+                  }
+                });
+          } finally {
+            ui.post(
+                () -> {
+                  if (!destroyed) {
+                    getWindow()
+                        .clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                    finishWork();
+                    start.setEnabled(true);
+                    cancelAnalysis.setEnabled(false);
+                  }
+                });
+          }
+        });
+  }
+
+  void showKeyResult(KeyAnalysisResult result) {
+    if (result.status == KeyAnalysisResult.INSUFFICIENT_MELODY) {
+      status.setText("旋律信息不足：请录制更完整的清唱乐句。单音、说话或静音无法可靠确定调式。");
+      return;
+    }
+    String[] names = {"C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"};
+    int count = Math.min(3, result.candidates.size());
+    String[] choices = new String[count];
+    StringBuilder summary =
+        new StringBuilder(
+            result.status == KeyAnalysisResult.AMBIGUOUS ? "调式存在歧义，请试听并选择候选。\n" : "人声调式候选：\n");
+    for (int i = 0; i < count; i++) {
+      KeyAnalysisResult.Candidate candidate = result.candidates.get(i);
+      choices[i] = names[candidate.tonic] + (candidate.scale == 0 ? " 大调" : " 小调");
+      summary.append(
+          String.format(Locale.US, "%s · 相对支持 %.1f%%\n", choices[i], candidate.support * 100));
+    }
+    if (result.possibleModulation) {
+      summary.append("片段之间可能转调。\n");
+    }
+    summary.append(
+        String.format(
+            Locale.US, "分析耗时 %.2fs，有效人声 %.1fs\n", result.elapsedSeconds, result.voicedSeconds));
+    summary.append("候选支持度不代表准确率；选择后才会用于修音。");
+    status.setText(summary);
+    new AlertDialog.Builder(this)
+        .setTitle("选择修音调式")
+        .setItems(
+            choices,
+            (dialog, index) -> {
+              KeyAnalysisResult.Candidate candidate = result.candidates.get(index);
+              tonicSelector.setSelection(candidate.tonic);
+              scaleSelector.setSelection(candidate.scale);
+              parameters.tonic = candidate.tonic;
+              parameters.scale = candidate.scale;
+              update();
+              status.setText("修音调式：" + choices[index]);
+            })
+        .setNegativeButton("保留当前调式", null)
+        .show();
   }
 
   void runOffline() {
@@ -412,11 +569,18 @@ public class MainActivity extends Activity {
   @Override
   public void onActivityResult(int request, int result, Intent data) {
     super.onActivityResult(request, result, data);
-    if (request != 2 || result != RESULT_OK || data == null) {
+    if (result != RESULT_OK || data == null) {
       return;
     }
     Uri uri = data.getData();
     if (uri == null) {
+      return;
+    }
+    if (request == 3) {
+      analyzeKey(uri);
+      return;
+    }
+    if (request != 2) {
       return;
     }
     busy = true;
@@ -466,14 +630,24 @@ public class MainActivity extends Activity {
     }
     super.onPause();
     if (live) {
-      stopRecording();
+      stopRecording(false);
     }
     stopPlayer();
   }
 
   @Override
   public void onDestroy() {
+    destroyed = true;
+    if (keyAnalyzer != null) {
+      keyAnalyzer.cancel();
+    }
     ui.removeCallbacksAndMessages(null);
+    worker.execute(
+        () -> {
+          if (keyAnalyzer != null) {
+            keyAnalyzer.close();
+          }
+        });
     worker.shutdown();
     if (audio != null) {
       audio.close();

@@ -16,22 +16,24 @@ Original SDK and demo code is licensed under [MIT](LICENSE): **free commercial u
 | Voice pitch shifting | `-12..+12` semitones; correction targets the selected scale **after** the voice pitch shift |
 | Reverb | Strength `0..1` |
 | Echo | Strength `0..1`, delay `40..800ms` |
+| Key analysis | Offline dual-model analysis after recording or audio import; tonic/mode candidates, ambiguity and local segments |
 | Noise reduction | Strength `0..1`; RNNoise v0.1 in real time and a larger RNNoise model offline |
 
-Real-time mode uses short-history pitch shifting. Offline mode uses Signalsmith Stretch, longer pitch analysis, and formant processing. Record both raw and processed WAVs. Voice shifting and tuning share one pitch-shift operation; no network or separate model downloads are required.
+Real-time mode uses short-history pitch shifting. Offline mode uses Signalsmith Stretch, longer pitch analysis, and formant processing. Record both raw and processed WAVs. Voice shifting and tuning share one pitch-shift operation; no network or separate model downloads are required for the effects. Offline key analysis uses separate model resources; see the [key-analysis guide](docs/KEY_ANALYSIS.en.md).
 
 ## Downloads and demos
 
-[Latest release and all assets](https://github.com/qmy1990/MobileAutoTune/releases/latest) · [v0.4.0](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.4.0)
+[Latest release and all assets](https://github.com/qmy1990/MobileAutoTune/releases/latest) · [v0.5.0](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.5.0)
 
 | Download | Contents |
 |---|---|
-| [Android demo APK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-demo-v0.4.0.apk) | Installable Debug demo: recording, controls, import, playback, offline processing |
-| [Universal Android AAR](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/mobileautotune-v0.4.0.aar) | `armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`; per-ABI AARs are also available |
-| [Android C/C++ SDK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-android-native-v0.4.0.zip) | Static core libraries for all four ABIs, headers, and CMake integration |
-| [iOS XCFramework](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAudioSDK-v0.4.0.xcframework.zip) | Device arm64; simulator arm64/x86_64 |
-| [Unsigned iOS demo IPA](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-demo-v0.4.0-unsigned.ipa) | Requires your own development/distribution signing; cannot be installed directly on arbitrary iPhones |
-| [iOS simulator demo](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.4.0/MobileAutoTune-demo-v0.4.0-simulator.zip) | Unzip, then run `xcrun simctl install booted MobileAudioDemo.app` |
+| [Android demo APK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-demo-v0.5.0.apk) | Installable Debug demo: recording, controls, import, playback, offline processing |
+| [Universal Android AAR](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/mobileautotune-v0.5.0.aar) | `armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`; per-ABI AARs are also available |
+| [Android C/C++ SDK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-android-native-v0.5.0.zip) | Static core libraries for all four ABIs, headers, and CMake integration |
+| [iOS XCFramework](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAudioSDK-v0.5.0.xcframework.zip) | Device arm64; simulator arm64/x86_64 |
+| [Unsigned iOS demo IPA](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-demo-v0.5.0-unsigned.ipa) | Requires your own development/distribution signing; cannot be installed directly on arbitrary iPhones |
+| [iOS simulator demo](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-demo-v0.5.0-simulator.zip) | Unzip, then run `xcrun simctl install booted MobileAudioDemo.app` |
+| [Key model pack](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-key-models-v0.5.0.zip) | Pinned FP32 models, manifest and licenses for SDK hosts |
 
 Demo sources: [Android](android/demo) / [iOS](ios/Demo). Release assets include `SHA256SUMS` and `manifest.json`. iOS14+ device builds are arm64; armv7 is not included.
 
@@ -55,11 +57,11 @@ Add the dependency to your app module:
 
 ```groovy
 dependencies {
-    implementation 'com.github.qmy1990:MobileAutoTune:v0.4.0'
+    implementation 'com.github.qmy1990:MobileAutoTune:v0.5.0'
 }
 ```
 
-Alternatively, put the downloaded AAR in `app/libs/` and use `implementation files('libs/mobileautotune-v0.4.0.aar')`. Choose one method. The Java package is **`com.moon.mobileautotune`**; the demo application ID is `com.moon.mobileautotune.demo`. 64-bit shared libraries use16KB alignment; the host APK still needs16KB-capable packaging (AGP8.5.1+). The AAR includes JNI libraries, the shared C++ runtime, and consumer ProGuard rules. If your host bundles a different `libc++_shared.so`, align NDK/STL versions instead of blindly overriding it.
+Alternatively, put the downloaded AAR in `app/libs/` and use `implementation files('libs/mobileautotune-v0.5.0.aar')`. Choose one method. The Java package is **`com.moon.mobileautotune`**; the demo application ID is `com.moon.mobileautotune.demo`. 64-bit shared libraries use16KB alignment; the host APK still needs16KB-capable packaging (AGP8.5.1+). The AAR includes JNI libraries, the shared C++ runtime, and consumer ProGuard rules. If your host bundles a different `libc++_shared.so`, align NDK/STL versions instead of blindly overriding it.
 
 ### Usage
 
@@ -90,7 +92,7 @@ Oboe requests AAudio/low-latency I/O with fallback for older systems and unsuppo
 
 ## iOS integration
 
-Add the XCFramework to your Xcode app and select **Do Not Embed** for this static library. Link `Foundation`, `AVFoundation`, `AudioToolbox`, and `libc++` (declared by the module map). Add `NSMicrophoneUsageDescription` and obtain microphone permission before recording.
+Add the XCFramework to your Xcode app and select **Do Not Embed** for this static library. Link `Foundation`, `AVFoundation`, `AudioToolbox`, `CoreML`, `Accelerate`, and `libc++` (declared by the module map). Add `NSMicrophoneUsageDescription` and obtain microphone permission before recording.
 
 ```swift
 import MobileAudioSDK
@@ -124,6 +126,12 @@ mat_set_parameters(engine, &p);
 mat_process_frame(engine, input480, output480);
 mat_destroy(engine);
 ```
+
+## Vocal key analysis
+
+The demos support automatic analysis after recording stops and local audio-document import. Use Android `KeyAnalyzer`, iOS `MATKeyAnalyzer` or the C API. Fixed FP32 SwiftF0 and RMVPE models use a validated multicore CPU path on Apple, with optional Android providers validated against CPU on a calibration chunk.
+
+Analysis runs on a local worker thread. About362MB of model weights are distributed separately from AAR/XCFramework libraries and bundled in the demos. Short phrases and relative major/minor can remain ambiguous; candidate support is not accuracy. See the [integration guide](docs/KEY_ANALYSIS.en.md) for model setup, API examples and limitations.
 
 ## Notes
 

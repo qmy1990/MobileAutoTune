@@ -7,6 +7,11 @@ This SDK vendors the following libraries. Their full licenses are reproduced bel
 - RNNoise (offline): BSD-3-Clause, commit 70f1d256acd4b34a572f999a05c87bf00b67730d, https://github.com/xiph/rnnoise
 - RNNoise (realtime): BSD-3-Clause, tag v0.1, https://github.com/xiph/rnnoise
 - Oboe: Apache-2.0, tag 1.9.3, https://github.com/google/oboe
+- ONNX Runtime: MIT, Android 1.22.0 / Apple 1.20.0, https://github.com/microsoft/onnxruntime. Full runtime license and dependency notices: `third_party/onnxruntime/LICENSE`, `ThirdPartyNotices.txt` (1.22.0), and `ThirdPartyNotices-1.20.0.txt` (1.20.0).
+- SwiftF0 code/model: MIT, commit d1ba77fe5331310b778ebe126b6cb3656d41d24f, https://github.com/lars76/swift-f0. Full license: `third_party/key_models/SwiftF0-LICENSE`.
+- RMVPE FP32 ONNX weights: MIT-tagged RVC model repository, revision e6d0c1a17da07c33557852f9dfa2bd44cc75737d, https://huggingface.co/lj1995/VoiceConversionWebUI. RVC license: `third_party/key_models/RMVPE-weights-LICENSE`. The model manifest records the exact source and SHA256. The original RMVPE research implementation is Apache-2.0; its source is not bundled.
+
+Binary packages include these full license files under `third_party/`. The Android AAR includes them under `assets/third_party/`. The separately distributed key-model pack includes both model licenses. Retain these files when distributing inference runtimes or models.
 
 RNNoise model data: official Xiph archive rnnoise_data-0a8755f8e2d834eff6a54714ecc7d75f9932e845df35f8b59bc52a7cfe6e8b37.tar.gz. Verified SHA256 matches the filename. Built-in inference uses the upstream data arrays (including upstream quantized weights on supported SIMD paths). No training checkpoints are shipped.
 

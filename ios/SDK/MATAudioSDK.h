@@ -1,3 +1,4 @@
+#import "MATKeyAnalyzer.h"
 #import <Foundation/Foundation.h>
 NS_ASSUME_NONNULL_BEGIN
 /** Shared parameters, C=0 ... Eb=3 ... A=9. Effect amounts0..1; tuning1 gives maximum mechanical

@@ -4,6 +4,7 @@ TASK_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TASK_BUILD="${1:-$TASK_ROOT/build-ios}"
 TASK_DIST="$TASK_ROOT/dist/ios"
 mkdir -p "$TASK_DIST/headers/mat" "$TASK_DIST/device" "$TASK_DIST/simulator"
+python3 "$TASK_ROOT/scripts/prepare_key_analysis.py" --platform ios
 for platform in device simulator; do
     sdk=iphoneos
     architectures=arm64
@@ -16,21 +17,34 @@ for platform in device simulator; do
     libtool -static -o "$TASK_DIST/$platform/libMobileAudioSDK.a" \
         "$TASK_BUILD-$platform/Release-$sdk/libMobileAudioSDK.a" \
         "$TASK_BUILD-$platform/core/Release-$sdk/libmobileautotune.a" \
+        "$TASK_BUILD-$platform/core/Release-$sdk/libmobileautotune_key.a" \
         "$TASK_BUILD-$platform/core/Release-$sdk/libmat_rnnoise.a" \
         "$TASK_BUILD-$platform/core/Release-$sdk/libmat_rnnoise_legacy.a"
 done
+for platform in device simulator; do
+    slice=ios-arm64
+    if [[ "$platform" == simulator ]]; then slice=ios-arm64_x86_64-simulator; fi
+    mv "$TASK_DIST/$platform/libMobileAudioSDK.a" "$TASK_DIST/$platform/libMobileAudioSDK-core.a"
+    libtool -static -o "$TASK_DIST/$platform/libMobileAudioSDK.a" \
+        "$TASK_DIST/$platform/libMobileAudioSDK-core.a" \
+        "$TASK_ROOT/.tools/ort/ios/onnxruntime.xcframework/$slice/onnxruntime.framework/onnxruntime"
+done
 cp "$TASK_ROOT/ios/SDK/MATAudioSDK.h" "$TASK_DIST/headers/"
+cp "$TASK_ROOT/ios/SDK/MATKeyAnalyzer.h" "$TASK_DIST/headers/"
 cp "$TASK_ROOT/include/mat/"*.h "$TASK_DIST/headers/mat/"
 cat > "$TASK_DIST/headers/module.modulemap" <<'MAP'
 module MobileAudioSDK {
     header "MATAudioSDK.h"
     header "mat/mobile_audio.h"
     header "mat/offline.h"
+    header "mat/key_analysis.h"
     export *
     link "c++"
     link framework "Foundation"
     link framework "AVFoundation"
     link framework "AudioToolbox"
+    link framework "CoreML"
+    link framework "Accelerate"
 }
 MAP
 # Only replace this script's generated package; preserve other distribution files.

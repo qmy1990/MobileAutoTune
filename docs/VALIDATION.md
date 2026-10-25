@@ -23,3 +23,19 @@ iPhone8 Plus / iOS16.7.10，四项满强度效果和 +5半音变声，90秒双�
 构建支持的最低版本为Android8.0和iOS14.0；所有最低系统、CPU架构和耳机路由仍需宿主项目在目标设备上验收。算法名义实时延迟20/30ms，整体声学往返≤50ms尚未完成测量。后处理性能取决于设备、素材和文件I/O，应对目标素材测量完整导出耗时。
 
 发布附件提供 `manifest.json` 和 `SHA256SUMS`，CI见 [GitHub Actions](https://github.com/qmy1990/MobileAutoTune/actions)。用户录音、设备日志和个人签名不包含在开源源码或安装包中。
+
+## Offline vocal key analysis
+
+The FP32 SwiftF0/RMVPE pipeline uses pinned model hashes. Validation covers all24 major/minor keys with synthetic pitch tracks, detuning/vibrato, silence, monotone and invalid observations; resampling at8/16/22.05/44.1/48/96/192kHz, chunk seams, the mel frontend and SHA256 known answers. Core, WAV and key tests pass with address/undefined sanitizers. The independent NumPy mel reference has maximum absolute error below0.0004 on the local validation input.
+
+Device results for a6-second,15-note harmonic C-major test signal:
+
+| Device / execution | First analysis | Reused analysis | Other checks |
+|---|---:|---:|---|
+| Snapdragon8Gen2, Android16, CPU4 threads | 4.90s | 0.53s | AAC document import0.71s; URI/native key parity; cancellation during inference; reuse |
+| Snapdragon8Gen2, Android16, automatic6 threads | 8.62s | 0.51s | Selected CPU for both models;13.13-second dry vocal1.33s |
+| iPhone8 Plus, iOS16.7.10, default CPU6 threads | 5.92s | Not separately timed | AVAudioFile decoding; cancellation; reuse |
+
+First-analysis time includes model verification/loading; Android bundled-asset copying occurs before this measurement. Automatic Android selection also includes provider comparison. These are offline measurements, not realtime audio round-trip measurements or a key-accuracy benchmark. Apple uses the validated multicore CPU path for the pinned dynamic models. Android tries NNAPI/XNNPACK and retains a provider only after numerical and timing checks.
+
+Private short dry-vocal samples can disagree with the whole-song key label and are reported as ambiguous. They do not establish top-1 key accuracy and are not distributed. Candidate support and pitch-model agreement are diagnostics, not probabilities of the musical key being correct. The synthesized signal checks numerical/integration behavior; its known key does not measure performance on real singing.

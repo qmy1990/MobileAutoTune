@@ -1,0 +1,29 @@
+{
+  "format": 1,
+  "precision": "float32",
+  "sample_rate": 16000,
+  "models": [
+    {
+      "file": "swift-f0.onnx",
+      "sha256": "6385e8c2ebc3872e82c9ff5946228de44cd3be77a750ea53698b7dbfe94b0a22",
+      "source": "https://github.com/lars76/swift-f0",
+      "revision": "d1ba77fe5331310b778ebe126b6cb3656d41d24f",
+      "license": "MIT",
+      "urls": [
+        "https://raw.githubusercontent.com/lars76/swift-f0/d1ba77fe5331310b778ebe126b6cb3656d41d24f/swift_f0/model.onnx",
+        "https://cdn.jsdelivr.net/gh/lars76/swift-f0@d1ba77fe5331310b778ebe126b6cb3656d41d24f/swift_f0/model.onnx"
+      ]
+    },
+    {
+      "file": "rmvpe.onnx",
+      "sha256": "5370e71ac80af8b4b7c793d27efd51fd8bf962de3a7ede0766dac0befa3660fd",
+      "source": "https://huggingface.co/lj1995/VoiceConversionWebUI",
+      "revision": "e6d0c1a17da07c33557852f9dfa2bd44cc75737d",
+      "license": "MIT (upstream model repository metadata)",
+      "urls": [
+        "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/rmvpe.onnx",
+        "https://hf-mirror.com/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/rmvpe.onnx"
+      ]
+    }
+  ]
+}

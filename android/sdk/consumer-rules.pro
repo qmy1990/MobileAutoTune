@@ -1,1 +1,3 @@
 -keep class com.moon.mobileautotune.MobileAudio { *; }
+-keep class com.moon.mobileautotune.KeyAnalyzer { *; }
+-keep class com.moon.mobileautotune.KeyAnalyzer$* { *; }

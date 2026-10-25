@@ -23,3 +23,5 @@ xcuserdata/
 *.p12
 *.keystore
 *.jks
+models/key/*.onnx
+models/key/*LICENSE

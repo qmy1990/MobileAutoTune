@@ -66,6 +66,7 @@ public class LivePerformanceInstrumentation extends Instrumentation {
       runOnMainSync(
           () -> {
             a.parameters.reverb = a.parameters.echo = a.parameters.denoise = 1;
+            a.analyzeAfterRecording.setChecked(false);
             a.parameters.tuning = Float.parseFloat(arguments.getString("tuning", "1"));
             a.parameters.pitchShiftSemitones = Float.parseFloat(arguments.getString("pitch", "0"));
             a.update();
