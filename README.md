@@ -23,17 +23,17 @@
 
 ## 下载与 Demo
 
-[最新发布与全部文件](https://github.com/qmy1990/MobileAutoTune/releases/latest) · [v0.5.0](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.5.0)
+[最新发布与全部文件](https://github.com/qmy1990/MobileAutoTune/releases/latest) · [v0.5.1](https://github.com/qmy1990/MobileAutoTune/releases/tag/v0.5.1)
 
 | 下载 | 说明 |
 |---|---|
-| [Android Demo APK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-demo-v0.5.0.apk) | 可安装的 Debug Demo，包含录音、参数调整、导入、试听和后处理 |
-| [Android 通用 AAR](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/mobileautotune-v0.5.0.aar) | `armeabi-v7a`、`arm64-v8a`、`x86`、`x86_64`；发布页另有各 ABI 单独 AAR |
-| [Android C/C++ SDK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-android-native-v0.5.0.zip) | 四种 ABI 的静态核心库、头文件及 CMake 集成文件 |
-| [iOS XCFramework](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAudioSDK-v0.5.0.xcframework.zip) | 真机 arm64；模拟器 arm64/x86_64 |
-| [iOS 未签名 Demo IPA](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-demo-v0.5.0-unsigned.ipa) | 需自己的开发／分发签名，不能直接安装到任意 iPhone |
-| [iOS 模拟器 Demo](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-demo-v0.5.0-simulator.zip) | 解压后 `xcrun simctl install booted MobileAudioDemo.app` |
-| [调式分析模型包](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.0/MobileAutoTune-key-models-v0.5.0.zip) | 固定 FP32 模型、清单与许可证；供 AAR／XCFramework 宿主部署 |
+| [Android Demo APK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.1/MobileAutoTune-demo-v0.5.1.apk) | 可安装的 Debug Demo，包含录音、参数调整、导入、试听和后处理 |
+| [Android 通用 AAR](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.1/mobileautotune-v0.5.1.aar) | `armeabi-v7a`、`arm64-v8a`、`x86`、`x86_64`；发布页另有各 ABI 单独 AAR |
+| [Android C/C++ SDK](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.1/MobileAutoTune-android-native-v0.5.1.zip) | 四种 ABI 的静态核心库、头文件及 CMake 集成文件 |
+| [iOS XCFramework](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.1/MobileAudioSDK-v0.5.1.xcframework.zip) | 真机 arm64；模拟器 arm64/x86_64 |
+| [iOS 未签名 Demo IPA](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.1/MobileAutoTune-demo-v0.5.1-unsigned.ipa) | 需自己的开发／分发签名，不能直接安装到任意 iPhone |
+| [iOS 模拟器 Demo](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.1/MobileAutoTune-demo-v0.5.1-simulator.zip) | 解压后 `xcrun simctl install booted MobileAudioDemo.app` |
+| [调式分析模型包](https://github.com/qmy1990/MobileAutoTune/releases/download/v0.5.1/MobileAutoTune-key-models-v0.5.1.zip) | 固定 FP32 模型、清单与许可证；供 AAR／XCFramework 宿主部署 |
 
 Demo 源码：[Android](android/demo) / [iOS](ios/Demo)。发布附件提供 `SHA256SUMS` 与 `manifest.json`。iOS 14 起仅提供 arm64 真机库，无 armv7 真机库。
 
@@ -57,11 +57,11 @@ dependencyResolutionManagement {
 
 ```groovy
 dependencies {
-    implementation 'com.github.qmy1990:MobileAutoTune:v0.5.0'
+    implementation 'com.github.qmy1990:MobileAutoTune:v0.5.1'
 }
 ```
 
-也可将下载的 AAR 放入 `app/libs/`，使用 `implementation files('libs/mobileautotune-v0.5.0.aar')`，二选一。Java 包名为 **`com.moon.mobileautotune`**，Demo 应用 ID 为 `com.moon.mobileautotune.demo`。64位共享库按16KB页面对齐；宿主APK仍需使用支持16KB打包的AGP（8.5.1+）。AAR 自带 JNI 库、C++ shared runtime 与混淆保留规则；宿主若已打包不同版本 `libc++_shared.so`，应统一 NDK/STL 版本，不盲目覆盖。
+也可将下载的 AAR 放入 `app/libs/`，使用 `implementation files('libs/mobileautotune-v0.5.1.aar')`，二选一。Java 包名为 **`com.moon.mobileautotune`**，Demo 应用 ID 为 `com.moon.mobileautotune.demo`。64位共享库按16KB页面对齐；宿主APK仍需使用支持16KB打包的AGP（8.5.1+）。AAR 自带 JNI 库、C++ shared runtime 与混淆保留规则；宿主若已打包不同版本 `libc++_shared.so`，应统一 NDK/STL 版本，不盲目覆盖。
 
 ### 使用
 

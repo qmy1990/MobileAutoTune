@@ -40,29 +40,26 @@ def digest(path):
 
 
 def within(path, directory):
-    try:
-        path.resolve().relative_to(directory.resolve())
-        return True
-    except ValueError:
-        return False
+    relative = os.path.relpath(os.path.realpath(str(path)), os.path.realpath(str(directory)))
+    return relative != os.pardir and not relative.startswith(os.pardir + os.sep)
 
 
 def fetch(target, urls, checksum):
     if target.is_file() and digest(target) == checksum:
         return
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=target.parent, prefix='.download-') as work:
+    os.makedirs(str(target.parent), exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=str(target.parent), prefix='.download-') as work:
         temporary = Path(work) / target.name
         for url in urls:
-            process = subprocess.run([
+            return_code = subprocess.call([
                 'curl', '-fL', '--silent', '--show-error', '--connect-timeout', '12',
                 '--max-time', '900', '--speed-time', '30', '--speed-limit', '1024',
                 url, '-o', str(temporary),
             ])
-            if process.returncode == 0 and digest(temporary) == checksum:
-                os.replace(temporary, target)
+            if return_code == 0 and digest(temporary) == checksum:
+                os.replace(str(temporary), str(target))
                 return
-        raise SystemExit(f'Cannot fetch verified dependency: {target.name}')
+        raise SystemExit('Cannot fetch verified dependency: {}'.format(target.name))
 
 
 def main():
@@ -72,11 +69,12 @@ def main():
     args = parser.parse_args()
     if args.runtime_only and args.platform == 'models':
         parser.error('--runtime-only requires a runtime platform')
-    manifest = json.loads((MODELS / 'manifest.json').read_text())
+    with (MODELS / 'manifest.json').open() as source:
+        manifest = json.load(source)
     for model in ([] if args.runtime_only else manifest['models']):
         fetch(MODELS / model['file'], model['urls'], model['sha256'])
     for license_file in (ROOT / 'third_party/key_models').glob('*LICENSE'):
-        shutil.copy2(license_file, MODELS / license_file.name)
+        shutil.copy2(str(license_file), str(MODELS / license_file.name))
     if args.platform == 'models':
         print('Verified key models are ready')
         return
@@ -89,26 +87,31 @@ def main():
         spec = RUNTIMES[platform]
         directory = ORT / platform
         stamp = directory / '.verified-runtime.json'
-        if stamp.is_file() and json.loads(stamp.read_text()).get('archive_sha256') == spec['sha256'] and json.loads(stamp.read_text()).get('symlinks') is True and (directory / spec['marker']).is_file():
-            continue
+        if stamp.is_file() and (directory / spec['marker']).is_file():
+            with stamp.open() as source:
+                cached = json.load(source)
+            if cached.get('archive_sha256') == spec['sha256'] and cached.get('symlinks') is True:
+                continue
         archive = CACHE / spec['file']
         fetch(archive, [spec['url']], spec['sha256'])
-        directory.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(archive) as package:
+        os.makedirs(str(directory), exist_ok=True)
+        with zipfile.ZipFile(str(archive)) as package:
             for name in package.namelist():
                 target = directory / name
                 if not within(target, directory):
                     raise SystemExit('Invalid runtime archive path')
-            package.extractall(directory)
+            package.extractall(str(directory))
             for item in package.infolist():
                 if stat.S_ISLNK(item.external_attr >> 16):
                     target = directory / item.filename
                     link = package.read(item).decode('utf-8')
                     if not within(target.parent / link, directory):
                         raise SystemExit('Invalid runtime symlink')
-                    target.unlink(missing_ok=True)
+                    if target.exists() or target.is_symlink():
+                        target.unlink()
                     target.symlink_to(link)
-        stamp.write_text(json.dumps({'archive_sha256': spec['sha256'], 'symlinks': True}) + '\n')
+        with stamp.open('w') as output:
+            output.write(json.dumps({'archive_sha256': spec['sha256'], 'symlinks': True}) + '\n')
     print('Verified key models and inference runtimes are ready')
 
 

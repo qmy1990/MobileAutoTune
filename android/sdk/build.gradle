@@ -1,7 +1,7 @@
 plugins { id 'com.android.library'; id 'maven-publish' }
 
 group = System.getenv('GROUP') ?: 'com.github.qmy1990'
-version = System.getenv('VERSION') ?: 'v0.5.0'
+version = System.getenv('VERSION') ?: 'v0.5.1'
 def sdkSourceRoot = rootProject.projectDir.parentFile
 def prepareKeyAnalysis = tasks.register('prepareKeyAnalysis', Exec) {
     workingDir sdkSourceRoot
